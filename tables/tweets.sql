@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS tweets (
+    tweet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tweet_text TEXT,
+    batch_key TEXT,
+    posted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)

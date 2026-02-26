@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS value_plays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_key TEXT,
+    event_id TEXT,
+    sport_key TEXT,
+    home_team TEXT,
+    away_team TEXT,
+    commence_time TEXT,
+    team TEXT,
+    exchange_key TEXT,
+    exchange_title TEXT,
+    consensus_true_prob REAL,
+    num_bookmakers INTEGER,
+    bookmakers_data TEXT,
+    best_bookmaker TEXT,
+    best_book_odds REAL,
+    best_book_implied REAL,
+    exchange_prob REAL,
+    bet_price REAL,
+    edge REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)

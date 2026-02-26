@@ -4,6 +4,11 @@ Automated micro-batch data platform for detecting opportunities and tracking wha
 
 Live alerts posted to [@cache_panda](https://x.com/cache_panda).
 
+<p align="center">
+  <img src="./docs/positive_ev_tweet.png" height="360" style="display:inline-block; margin-right:10px;" />
+  <img src="./docs/whale_tweet.png" height="360" style="display:inline-block;" />
+</p>
+
 [![Python](https://img.shields.io/badge/Python-3.9-blue.svg)](https://www.python.org/)
 [![Airflow](https://img.shields.io/badge/Airflow-3.1-orange.svg)](https://airflow.apache.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://www.docker.com/)

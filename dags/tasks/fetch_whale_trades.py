@@ -32,7 +32,7 @@ def fetch_whale_trades(batch_key):
         try:
             transactions = get_recent_activity(wallet_address, cutoff_time)
             for transaction in transactions:
-                if transaction.get('usdcSize', 0) > 10000:
+                if transaction.get('usdcSize', 0) > 50000:
                     rows.append((
                         transaction['transactionHash'],
                         transaction['proxyWallet'],

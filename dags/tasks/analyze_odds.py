@@ -188,7 +188,7 @@ def analyze_event(batch_key, event_id, event_data, target_exchange) -> List[tupl
             exchange_odd['price'],
             exchange_prob_implied,
             exchange_probs_clean[i],
-            exchange_odd.get('outcome_link'),
+            exchange_odd.get('bookmaker_link'),
             len(bookmakers),
             json.dumps(bookmaker_data),
             avg_bookmaker_prob,
@@ -199,7 +199,7 @@ def analyze_event(batch_key, event_id, event_data, target_exchange) -> List[tupl
             best_opposite.get('bookmaker_title', best_opposite.get('title')),
             best_opposite['price'],
             best_opposite_prob_clean,
-            best_opposite.get('outcome_link'),
+            best_opposite.get('bookmaker_link'),
             arb_profit_pct,
             arb_total_implied
         )

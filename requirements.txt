@@ -6,3 +6,4 @@ py-clob-client
 millify
 tweepy
 pytest-cov
+py-clob-client

@@ -4,8 +4,8 @@ from datetime import datetime
 
 
 @dag(
-    # schedule='*/15 * * * *',
-    schedule=None,
+    schedule='*/5 * * * *',
+    # schedule=None,
     start_date=datetime(2026, 2, 18),
     tags=['polymarket']
 )

@@ -1,7 +1,8 @@
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from typing import Dict, List
 from collections import defaultdict
 import json
+import psycopg2.extras
 
 # Only analyze liquid exchanges and bookmakers for accuracy
 TARGET_EXCHANGES = ['polymarket', 'kalshi']
@@ -9,12 +10,12 @@ INCLUDE_BOOKMAKERS = ['betmgm', 'betonlineag', 'betrivers', 'draftkings', 'fandu
 
 
 def analyze_odds(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     
     # delete existing in case of rerun with updated logic
-    hook.run("DELETE FROM odds_analysis WHERE batch_key = ?", parameters=(batch_key,))
+    hook.run("DELETE FROM odds_analysis WHERE batch_key = %s", parameters=(batch_key,))
     
-    bookmaker_placeholders = ','.join(['?'] * (len(TARGET_EXCHANGES) + len(INCLUDE_BOOKMAKERS)))
+    bookmaker_placeholders = ','.join(['%s'] * (len(TARGET_EXCHANGES) + len(INCLUDE_BOOKMAKERS)))
     allowed_bookmakers = TARGET_EXCHANGES + INCLUDE_BOOKMAKERS
     
     snapshots = hook.get_records(f"""
@@ -22,7 +23,7 @@ def analyze_odds(batch_key):
                bookmaker_key, outcome_name, price, bookmaker_title,
                bookmaker_link, outcome_link
         FROM odds_snapshots
-        WHERE batch_key = ?
+        WHERE batch_key = %s
           AND bookmaker_key IN ({bookmaker_placeholders})
     """, parameters=(batch_key, *allowed_bookmakers))
     
@@ -37,17 +38,18 @@ def analyze_odds(batch_key):
     
     if analysis_rows:
         conn = hook.get_conn()
-        conn.executemany("""
-            INSERT INTO odds_analysis (
-                batch_key, event_id, outcome_name, sport_key, home_team, away_team,
-                commence_time, exchange_key, exchange_price, exchange_prob_implied,
-                exchange_prob_clean, exchange_link, num_bookmakers, bookmaker_probs,
-                avg_bookmaker_prob, std_bookmaker_prob, ev_edge, best_opposite_outcome,
-                best_opposite_source_key, best_opposite_source_title,
-                best_opposite_price, best_opposite_prob_clean, best_opposite_link,
-                arb_profit_pct, arb_total_implied_prob
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, analysis_rows)
+        with conn.cursor() as cur:
+            psycopg2.extras.execute_batch(cur, """
+                INSERT INTO odds_analysis (
+                    batch_key, event_id, outcome_name, sport_key, home_team, away_team,
+                    commence_time, exchange_key, exchange_price, exchange_prob_implied,
+                    exchange_prob_clean, exchange_link, num_bookmakers, bookmaker_probs,
+                    avg_bookmaker_prob, std_bookmaker_prob, ev_edge, best_opposite_outcome,
+                    best_opposite_source_key, best_opposite_source_title,
+                    best_opposite_price, best_opposite_prob_clean, best_opposite_link,
+                    arb_profit_pct, arb_total_implied_prob
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, analysis_rows)
         conn.commit()
     
     print(f"Analyzed {len(analysis_rows)} outcomes for batch_key={batch_key}")

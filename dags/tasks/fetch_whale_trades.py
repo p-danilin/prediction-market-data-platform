@@ -1,11 +1,12 @@
 import requests
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+import psycopg2.extras
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
 
 def fetch_wallet_addresses() -> list[str]:
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     records = hook.get_records("SELECT wallet_address FROM whale_profiles")
     return [r[0] for r in records]
 
@@ -23,7 +24,7 @@ def get_recent_activity(wallet_address, start_time, limit=500):
     return response.json()
 
 def fetch_whale_trades(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     cutoff_time = int((datetime.now() - timedelta(minutes=15)).timestamp())
     whales = fetch_wallet_addresses()
     
@@ -57,13 +58,14 @@ def fetch_whale_trades(batch_key):
     
     if all_rows:
         conn = hook.get_conn()
-        cursor = conn.cursor()
-        cursor.executemany("""
-            INSERT OR IGNORE INTO raw_trades
-            (transaction_hash, wallet_address, market_title, market_slug,
-             side, outcome, price, size, timestamp, batch_key)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, all_rows)
+        with conn.cursor() as cursor:
+            psycopg2.extras.execute_batch(cursor, """
+                INSERT INTO raw_trades
+                (transaction_hash, wallet_address, market_title, market_slug,
+                 side, outcome, price, size, timestamp, batch_key)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (transaction_hash) DO NOTHING
+            """, all_rows)
         conn.commit()
         print(f"Inserted {len(all_rows)} trades with batch_key {batch_key}")
     else:

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS {{ table }} (
+CREATE TABLE IF NOT EXISTS odds_analysis (
     batch_key TEXT NOT NULL,
     event_id TEXT NOT NULL,
     outcome_name TEXT NOT NULL,
@@ -7,12 +7,12 @@ CREATE TABLE IF NOT EXISTS {{ table }} (
     sport_key TEXT NOT NULL,
     home_team TEXT NOT NULL,
     away_team TEXT NOT NULL,
-    commence_time DATETIME NOT NULL,
+    commence_time TIMESTAMP NOT NULL,
     
-    -- Exchange side (where you bet)
+    -- Exchange side
     exchange_key TEXT NOT NULL,
     exchange_price REAL NOT NULL,
-    exchange_prob_implied REAL NOT NULL,  -- Raw implied prob (1/price) - what you actually pay
+    exchange_prob_implied REAL NOT NULL,  -- Raw implied prob (1/price)
     exchange_prob_clean REAL NOT NULL,    -- Vig-removed prob (for reference)
     exchange_link TEXT,
     
@@ -35,6 +35,6 @@ CREATE TABLE IF NOT EXISTS {{ table }} (
     arb_profit_pct REAL NOT NULL,
     arb_total_implied_prob REAL NOT NULL,  -- Sum of both sides' implied probs
     
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (batch_key, event_id, exchange_key, outcome_name)
 );

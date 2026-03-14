@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 REGIONS = "us,us_ex"
 SPORTS = ["icehockey_nhl", "basketball_nba",]
@@ -46,14 +46,17 @@ def get_sportsbook_odds():
     return all_events
 
 def fetch_sportsbook_odds(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     events = get_sportsbook_odds()
 
     for event in events:
         hook.run(
             """
-            INSERT OR REPLACE INTO raw_odds (id, batch_key, raw_response, loaded_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO raw_odds (id, batch_key, raw_response, loaded_at)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (id, batch_key) DO UPDATE SET
+                raw_response = EXCLUDED.raw_response,
+                loaded_at = EXCLUDED.loaded_at
             """,
             parameters=(
                 event['id'],

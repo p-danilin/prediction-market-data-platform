@@ -1,4 +1,5 @@
 import time
+import psycopg2.extras
 from .polymarket_client import PolymarketClient
 
 ORDER_EXPIRATION_SECONDS = 120
@@ -66,10 +67,11 @@ class TradeExecutor:
     
     def _log_trade(self, conn, batch_key, event_id, outcome_name, exchange_key, token_id, 
                    target_price, size, ev_edge, order_id, status, error_msg):
-        conn.execute("""
-            INSERT INTO trade_executions (
-                batch_key, event_id, outcome_name, exchange_key, token_id,
-                target_price, size, ev_edge, order_id, status, error_msg
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (batch_key, event_id, outcome_name, exchange_key, token_id,
-              target_price, size, ev_edge, order_id, status, error_msg))
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO trade_executions (
+                    batch_key, event_id, outcome_name, exchange_key, token_id,
+                    target_price, size, ev_edge, order_id, status, error_msg
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (batch_key, event_id, outcome_name, exchange_key, token_id,
+                  target_price, size, ev_edge, order_id, status, error_msg))

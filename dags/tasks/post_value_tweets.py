@@ -1,4 +1,4 @@
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 import tweepy
 import os
 import json
@@ -22,7 +22,7 @@ def post_tweet(tweet):
 
 
 def post_value_tweets(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
 
     # Get top value plays by edge from cleaned_odds (only positive edge)
     MIN_EDGE = 0.02  # 2% minimum edge to tweet
@@ -36,7 +36,7 @@ def post_value_tweets(batch_key):
                ro.raw_response
         FROM cleaned_odds co
         JOIN raw_odds ro ON co.raw_odds_id = ro.id AND co.batch_key = ro.batch_key
-        WHERE co.batch_key = ? AND co.edge > ?
+        WHERE co.batch_key = %s AND co.edge > %s
         ORDER BY co.edge DESC
     """, parameters=(batch_key, MIN_EDGE))
     
@@ -94,7 +94,7 @@ ${actual_cost:.0f} → ${ev:.2f} EV
         
         hook.run("""
             INSERT INTO tweets (tweet_text, batch_key)
-            VALUES (?, ?)
+            VALUES (%s, %s)
         """, parameters=(tweet, batch_key))
         
         # Only post the first tweet

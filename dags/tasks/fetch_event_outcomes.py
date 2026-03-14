@@ -3,16 +3,16 @@ import os
 import json
 from datetime import datetime
 
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 def fetch_event_outcomes(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     
     # Get unique sports from past events
     sports = hook.get_pandas_df("""
         SELECT DISTINCT sport_key 
         FROM odds_snapshots 
-        WHERE commence_time < datetime('now')
+        WHERE commence_time < NOW()
     """)['sport_key'].tolist()
     
     if not sports:
@@ -65,9 +65,14 @@ def fetch_event_outcomes(batch_key):
         
         hook.run(
             """
-            INSERT OR REPLACE INTO event_outcomes 
+            INSERT INTO event_outcomes 
             (event_id, sport_key, home_team, away_team, commence_time, winner, home_score, away_score, completed, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (event_id) DO UPDATE SET
+                winner = EXCLUDED.winner,
+                home_score = EXCLUDED.home_score,
+                away_score = EXCLUDED.away_score,
+                completed = EXCLUDED.completed
             """,
             parameters=(
                 game['id'],

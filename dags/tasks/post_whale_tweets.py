@@ -1,4 +1,4 @@
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from millify import millify
 import tweepy
 import os
@@ -22,7 +22,7 @@ def post_tweet(tweet):
 
 
 def post_whale_tweets(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
 
     # get trades by batch_key
     trades = hook.get_records("""
@@ -31,7 +31,7 @@ def post_whale_tweets(batch_key):
                wp.username, wp.pnl, wp.volume
         FROM raw_trades rt 
         JOIN whale_profiles wp ON rt.wallet_address = wp.wallet_address 
-        WHERE rt.batch_key = ?
+        WHERE rt.batch_key = %s
         ORDER BY rt.size DESC
     """, parameters=(batch_key,))
     
@@ -50,7 +50,7 @@ Trader stats: ${millify(pnl, precision=0)} profit, ${millify(volume, precision=0
         
         hook.run("""
             INSERT INTO tweets (tweet_text, batch_key)
-            VALUES (?, ?)
+            VALUES (%s, %s)
         """, parameters=(tweet, batch_key))
         
         # Only post the first tweet

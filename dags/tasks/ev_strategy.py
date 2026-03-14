@@ -1,4 +1,4 @@
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from .utils.trade_executor import TradeExecutor
 from datetime import datetime, timezone
 
@@ -12,7 +12,7 @@ EXCHANGE_KEY = 'polymarket'
 
 
 def ev_strategy(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     
     opportunities = _fetch_opportunities(hook, batch_key)
     if not opportunities:
@@ -33,7 +33,7 @@ def _fetch_opportunities(hook, batch_key):
         SELECT event_id, outcome_name, exchange_key, exchange_price, ev_edge, 
                sport_key, home_team, away_team, commence_time, avg_bookmaker_prob, exchange_link
         FROM odds_analysis
-        WHERE batch_key = ? AND exchange_key = ? AND ev_edge > ? AND num_bookmakers >= ?
+        WHERE batch_key = %s AND exchange_key = %s AND ev_edge > %s AND num_bookmakers >= %s
         ORDER BY ev_edge DESC
     """, parameters=(batch_key, EXCHANGE_KEY, MIN_EV_EDGE, MIN_BOOKMAKERS))
 
@@ -47,17 +47,20 @@ def _filter_by_bet_limits(hook, opportunities):
         event_id, outcome_name, _, _, _, _, _, _, commence_time = opp[:9]
         
         # Skip if event has already started
-        event_start = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+        if isinstance(commence_time, str):
+            event_start = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+        else:
+            event_start = commence_time.replace(tzinfo=timezone.utc) if commence_time.tzinfo is None else commence_time
         if now >= event_start:
             print(f"✗ Skipping {outcome_name} - event already started")
             continue
         
         outcome_bet_count = hook.get_first("""
             SELECT COUNT(*) FROM trade_executions
-            WHERE event_id = ? AND outcome_name = ? AND status = 'success'
+            WHERE event_id = %s AND outcome_name = %s AND status = 'success'
         """, parameters=(event_id, outcome_name))[0]
         
-        if outcome_bet_count < MAX_BETS_PER_OUTCOME:
+        if int(outcome_bet_count) < MAX_BETS_PER_OUTCOME:
             filtered.append(opp)
         else:
             print(f"✗ Skipping {outcome_name} - already bet {outcome_bet_count} time(s)")

@@ -3,5 +3,5 @@ CREATE TABLE IF NOT EXISTS whale_profiles (
     username TEXT,
     volume REAL,
     pnl REAL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )

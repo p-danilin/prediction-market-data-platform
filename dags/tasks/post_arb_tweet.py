@@ -1,17 +1,17 @@
 import os
 import tweepy
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 
 def post_arb_tweet(batch_key):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     
     opportunities = hook.get_records("""
         SELECT home_team, away_team, outcome_name, exchange_key, exchange_price, exchange_link,
                best_opposite_outcome, best_opposite_source_title, best_opposite_price, 
                best_opposite_link, arb_profit_pct
         FROM odds_analysis
-        WHERE batch_key = ? AND arb_profit_pct > 0
+        WHERE batch_key = %s AND arb_profit_pct > 0
         ORDER BY arb_profit_pct DESC
         LIMIT 1
     """, parameters=(batch_key,))

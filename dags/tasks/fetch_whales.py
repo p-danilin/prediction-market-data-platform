@@ -1,5 +1,5 @@
 import requests
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 LEADERBOARD_LIMIT = 50
 TOTAL_WHALES = 200
@@ -17,7 +17,7 @@ def fetch_leaderboard(limit, offset=0):
     return response.json()
 
 def fetch_and_upsert_leaderboard():
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     result = hook.get_first("SELECT MAX(updated_at) FROM whale_profiles")
 
     if result and result[0]:
@@ -41,9 +41,14 @@ def fetch_and_upsert_leaderboard():
             print(f"Skipping whale missing proxyWallet")
             continue
         hook.run("""                                                                                                                                                                                                                                      
-                   INSERT OR REPLACE INTO whale_profiles                                                                                                                                                                                                         
+                   INSERT INTO whale_profiles                                                                                                                                                                                                         
                    (wallet_address, username, volume, pnl, updated_at)                                                                                                                                                                                  
-                   VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)                                                                                                                                                                                                     
+                   VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                   ON CONFLICT (wallet_address) DO UPDATE SET
+                       username = EXCLUDED.username,
+                       volume = EXCLUDED.volume,
+                       pnl = EXCLUDED.pnl,
+                       updated_at = CURRENT_TIMESTAMP
                """,
             parameters=(
                 wallet,

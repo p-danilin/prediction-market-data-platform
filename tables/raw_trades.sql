@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS raw_trades (
     size REAL,
     timestamp INTEGER,
     batch_key TEXT,
-    loaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS trade_executions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     batch_key TEXT NOT NULL,
     event_id TEXT NOT NULL,
     outcome_name TEXT NOT NULL,

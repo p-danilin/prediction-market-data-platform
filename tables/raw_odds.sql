@@ -1,7 +1,7 @@
-CREATE TABLE IF NOT EXISTS {{ table }} (
+CREATE TABLE IF NOT EXISTS raw_odds (
     id TEXT,
     batch_key TEXT,
     raw_response TEXT,
-    loaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id, batch_key)
 )

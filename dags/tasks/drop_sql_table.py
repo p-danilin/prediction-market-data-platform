@@ -1,7 +1,7 @@
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 
 def drop_sql_table(table_name):
-    hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    hook = PostgresHook(postgres_conn_id='postgres_default')
     hook.run(f"DROP TABLE IF EXISTS {table_name}")
     print(f"Dropped table: {table_name}")
